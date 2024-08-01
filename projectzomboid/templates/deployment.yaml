@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "projectzomboid.fullname" . }}
+  labels:
+    {{- include "projectzomboid.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "projectzomboid.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "projectzomboid.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "projectzomboid.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:          
+            - name: "RCON_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  key:  RCON_PASSWORD
+                  name: {{ .Release.Name }}-auth
+            - name: "ADMIN_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  key:  ADMIN_PASSWORD
+                  name: {{ .Release.Name }}-auth
+            - name: "SERVER_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  key:  SERVER_PASSWORD
+                  name: {{ .Release.Name }}-auth
+            - name: "SERVER_PUBLIC_NAME"
+              valueFrom:
+                secretKeyRef:
+                  key:  SERVER_PUBLIC_NAME
+                  name: {{ .Release.Name }}-auth
+            - name: "SERVER_PUBLIC_DESC"
+              valueFrom:
+                secretKeyRef:
+                  key:  SERVER_PUBLIC_DESC
+                  name: {{ .Release.Name }}-auth
+            - name: "RCON_PORT"
+              valueFrom:
+                secretKeyRef:
+                  key:  RCON_PORT
+                  name: {{ .Release.Name }}-auth
+            - name: "XMX"
+              valueFrom:
+                secretKeyRef:
+                  key:  XMX
+                  name: {{ .Release.Name }}-auth
+            - name: "XMS"
+              valueFrom:
+                secretKeyRef:
+                  key:  XMS
+                  name: {{ .Release.Name }}-auth   
+            - name: "SERVER_NAME"
+              valueFrom:
+                secretKeyRef:
+                  key:  SERVER_NAME
+                  name: {{ .Release.Name }}-auth   
+          # ports:
+          #   - name: port1
+          #     containerPort: {{ .Values.service.port1 }}
+          #     protocol: {{ .Values.service.protocol }}
+          #     targetPort: {{ .Values.service.targetPort1 }}
+          #   - name: port2
+          #     containerPort: {{ .Values.service.port2 }}
+          #     protocol: {{ .Values.service.protocol }}
+          #     targetPort: {{ .Values.service.targetPort2 }}
+          #   - name: port3
+          #     containerPort: {{ .Values.service.port3 }}
+          #     protocol: {{ .Values.service.protocol }}
+          #     targetPort: {{ .Values.service.targetPort3 }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          stdin: true
+          tty: true
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
